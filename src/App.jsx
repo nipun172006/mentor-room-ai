@@ -89,7 +89,7 @@ function Sidebar({ activePersonaId, onSelect }) {
       </div>
 
       <p className="sidebar__note">
-        <span>AI</span> Educational simulations inspired by public material—not the real people.
+        <span>AI</span> Student-built personas based on public material.
       </p>
     </aside>
   );

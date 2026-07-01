@@ -26,6 +26,6 @@ app.get("*splat", (_request, response) => {
   response.sendFile(path.join(distDirectory, "index.html"));
 });
 
-app.listen(port, () => {
+app.listen(port, "0.0.0.0", () => {
   console.log(`Mentor Room API listening on http://localhost:${port}`);
 });

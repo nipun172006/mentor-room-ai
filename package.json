@@ -11,7 +11,7 @@
     "check": "npm run test && npm run build"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20 <25"
   },
   "dependencies": {
     "compression": "^1.8.1",
