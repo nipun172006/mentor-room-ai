@@ -8,6 +8,16 @@ import {
   validateChatBody,
 } from "../api/_lib/gemini.js";
 
+function apiResponse(status, payload) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => payload,
+  };
+}
+
+const silentLogger = { warn() {} };
+
 test("validates and trims a normal chat request", () => {
   const result = validateChatBody({
     personaId: "kshitij",
@@ -59,12 +69,9 @@ test("sends the chosen persona as a system instruction", async () => {
   let capturedRequest;
   const fetchImplementation = async (url, request) => {
     capturedRequest = { url, request };
-    return {
-      ok: true,
-      json: async () => ({
-        candidates: [{ content: { parts: [{ text: "A focused answer." }] } }],
-      }),
-    };
+    return apiResponse(200, {
+      candidates: [{ content: { parts: [{ text: "A focused answer." }] } }],
+    });
   };
 
   const result = await createChatResponse(
@@ -76,6 +83,7 @@ test("sends the chosen persona as a system instruction", async () => {
       apiKey: "test-key",
       model: "test-model",
       fetchImplementation,
+      logger: silentLogger,
     },
   );
 
@@ -91,6 +99,99 @@ test("sends the chosen persona as a system instruction", async () => {
   assert.equal(capturedRequest.request.headers["x-goog-api-key"], "test-key");
 });
 
+test("retries a temporarily unavailable model", async () => {
+  let callCount = 0;
+  const fetchImplementation = async () => {
+    callCount += 1;
+    return callCount === 1
+      ? apiResponse(503, { error: { message: "High demand" } })
+      : apiResponse(200, {
+          candidates: [{ content: { parts: [{ text: "Recovered response." }] } }],
+        });
+  };
+
+  const result = await createChatResponse(
+    {
+      personaId: "anshuman",
+      messages: [{ role: "user", text: "Help me plan." }],
+    },
+    {
+      apiKey: "test-key",
+      model: "primary-model",
+      fallbackModel: "fallback-model",
+      fetchImplementation,
+      sleepImplementation: async () => {},
+      logger: silentLogger,
+    },
+  );
+
+  assert.equal(result.text, "Recovered response.");
+  assert.equal(callCount, 2);
+});
+
+test("uses Flash-Lite when the primary model stays unavailable", async () => {
+  const requestedModels = [];
+  let fallbackRequest;
+  const fetchImplementation = async (url, request) => {
+    requestedModels.push(url);
+
+    if (url.includes("fallback-model")) {
+      fallbackRequest = request;
+      return apiResponse(200, {
+        candidates: [{ content: { parts: [{ text: "Fallback response." }] } }],
+      });
+    }
+
+    return apiResponse(503, { error: { message: "Provider detail" } });
+  };
+
+  const result = await createChatResponse(
+    {
+      personaId: "kshitij",
+      messages: [{ role: "user", text: "Explain a queue." }],
+    },
+    {
+      apiKey: "test-key",
+      model: "primary-model",
+      fallbackModel: "fallback-model-flash-lite",
+      fetchImplementation,
+      sleepImplementation: async () => {},
+      logger: silentLogger,
+    },
+  );
+
+  const fallbackBody = JSON.parse(fallbackRequest.body);
+  assert.equal(result.text, "Fallback response.");
+  assert.equal(requestedModels.length, 3);
+  assert.match(requestedModels[2], /fallback-model-flash-lite/);
+  assert.equal(fallbackBody.generationConfig.thinkingConfig.thinkingBudget, 0);
+});
+
+test("hides provider details when every model is unavailable", async () => {
+  const request = createChatResponse(
+    {
+      personaId: "abhimanyu",
+      messages: [{ role: "user", text: "How do I find a mentor?" }],
+    },
+    {
+      apiKey: "test-key",
+      model: "primary-model",
+      fallbackModel: "fallback-model",
+      fetchImplementation: async () =>
+        apiResponse(503, { error: { message: "Internal provider detail" } }),
+      sleepImplementation: async () => {},
+      logger: silentLogger,
+    },
+  );
+
+  await assert.rejects(request, (error) => {
+    assert.equal(error.status, 503);
+    assert.match(error.message, /busy right now/i);
+    assert.doesNotMatch(error.message, /internal provider detail/i);
+    return true;
+  });
+});
+
 test("returns a friendly setup error when the API key is missing", async () => {
   await assert.rejects(
     createChatResponse(
@@ -98,7 +199,7 @@ test("returns a friendly setup error when the API key is missing", async () => {
         personaId: "anshuman",
         messages: [{ role: "user", text: "Hello" }],
       },
-      { apiKey: "" },
+      { apiKey: "", logger: silentLogger },
     ),
     /not connected yet/i,
   );
