@@ -566,6 +566,45 @@ textarea:focus-visible {
   background: #292824;
 }
 
+.message__bubble--markdown > :first-child {
+  margin-top: 0;
+}
+
+.message__bubble--markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.message__bubble--markdown p {
+  margin: 0 0 0.85em;
+}
+
+.message__bubble--markdown ol,
+.message__bubble--markdown ul {
+  margin: 0.35em 0 0.9em;
+  padding-left: 1.4em;
+}
+
+.message__bubble--markdown li {
+  padding-left: 0.2em;
+}
+
+.message__bubble--markdown li + li {
+  margin-top: 0.32em;
+}
+
+.message__bubble--markdown strong {
+  color: #2f2d29;
+  font-weight: 700;
+}
+
+.message__bubble--markdown code {
+  padding: 0.12em 0.35em;
+  border-radius: 5px;
+  background: #eeeae3;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+}
+
 .typing {
   display: flex;
   width: 60px;
