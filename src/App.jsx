@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import Markdown from "react-markdown";
 import { getPersona, personas } from "./data/personas.js";
 
 const MAX_INPUT_LENGTH = 2_000;
@@ -122,13 +123,19 @@ function Message({ message, persona }) {
       {!isUser && <PersonaAvatar persona={persona} small />}
       <div className="message__content">
         <span className="message__author">{isUser ? "You" : persona.shortName}</span>
-        <div className="message__bubble">
-          {message.text.split("\n").map((line, index) => (
-            <span key={`${line}-${index}`}>
-              {line || "\u00A0"}
-              {index < message.text.split("\n").length - 1 && <br />}
-            </span>
-          ))}
+        <div
+          className={`message__bubble ${!isUser ? "message__bubble--markdown" : ""}`}
+        >
+          {isUser ? (
+            message.text.split("\n").map((line, index, lines) => (
+              <span key={`${line}-${index}`}>
+                {line || "\u00A0"}
+                {index < lines.length - 1 && <br />}
+              </span>
+            ))
+          ) : (
+            <Markdown>{message.text}</Markdown>
+          )}
         </div>
       </div>
     </article>
