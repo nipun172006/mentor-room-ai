@@ -167,6 +167,67 @@ test("uses Flash-Lite when the primary model stays unavailable", async () => {
   assert.equal(fallbackBody.generationConfig.thinkingConfig.thinkingBudget, 0);
 });
 
+test("uses the backup model when both earlier models stay unavailable", async () => {
+  const requestedModels = [];
+  let backupRequest;
+  const fetchImplementation = async (url, request) => {
+    requestedModels.push(url);
+
+    if (url.includes("gemini-3.1-flash-lite")) {
+      backupRequest = request;
+      return apiResponse(200, {
+        candidates: [{ content: { parts: [{ text: "Backup response." }] } }],
+      });
+    }
+
+    return apiResponse(503, { error: { message: "High demand" } });
+  };
+
+  const result = await createChatResponse(
+    {
+      personaId: "kshitij",
+      messages: [{ role: "user", text: "Explain a stack." }],
+    },
+    {
+      apiKey: "test-key",
+      model: "primary-model",
+      fallbackModel: "fallback-model",
+      backupModel: "gemini-3.1-flash-lite",
+      fetchImplementation,
+      sleepImplementation: async () => {},
+      logger: silentLogger,
+    },
+  );
+
+  const backupBody = JSON.parse(backupRequest.body);
+  assert.equal(result.text, "Backup response.");
+  assert.equal(requestedModels.length, 5);
+  assert.match(requestedModels[4], /gemini-3.1-flash-lite/);
+  assert.equal(backupBody.generationConfig.thinkingConfig, undefined);
+});
+
+test("answers a short thank-you locally without calling Gemini", async () => {
+  const result = await createChatResponse(
+    {
+      personaId: "kshitij",
+      messages: [
+        { role: "user", text: "Why is binary search O(log n)?" },
+        { role: "model", text: "Each step removes half of the search space." },
+        { role: "user", text: "thankyou sir, you teached so good!" },
+      ],
+    },
+    {
+      apiKey: "",
+      fetchImplementation: async () => {
+        throw new Error("Gemini should not be called for this reply");
+      },
+      logger: silentLogger,
+    },
+  );
+
+  assert.match(result.text, /you understood the idea/i);
+});
+
 test("hides provider details when every model is unavailable", async () => {
   const request = createChatResponse(
     {
@@ -177,6 +238,7 @@ test("hides provider details when every model is unavailable", async () => {
       apiKey: "test-key",
       model: "primary-model",
       fallbackModel: "fallback-model",
+      backupModel: "backup-model",
       fetchImplementation: async () =>
         apiResponse(503, { error: { message: "Internal provider detail" } }),
       sleepImplementation: async () => {},
