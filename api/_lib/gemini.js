@@ -3,10 +3,19 @@ import { getPersonaPrompt, isPersonaId } from "./personas.js";
 const MAX_MESSAGES = 20;
 const MAX_MESSAGE_LENGTH = 2_000;
 const MAX_ATTEMPTS_PER_MODEL = 2;
-const RETRY_DELAY_MS = 350;
+const RETRY_DELAY_MS = 900;
 const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 const DEFAULT_MODEL = "gemini-2.5-flash";
 const DEFAULT_FALLBACK_MODEL = "gemini-2.5-flash-lite";
+const DEFAULT_BACKUP_MODEL = "gemini-3.1-flash-lite";
+const LOCAL_REPLIES = {
+  anshuman:
+    "You’re welcome. The best way to make it stick is to explain the idea once in your own words. What would you like to work through next?",
+  abhimanyu:
+    "You’re welcome! I’m glad it helped. Try using the idea once today, and tell me what you’d like to work on next.",
+  kshitij:
+    "You’re welcome! You understood the idea—that’s the important part. Try one example on your own, then tell me which concept we should break down next.",
+};
 
 export class ChatError extends Error {
   constructor(message, status = 400) {
@@ -69,14 +78,33 @@ function wait(milliseconds) {
 }
 
 function getGenerationConfig(model) {
-  return {
+  const config = {
     temperature: 0.75,
     topP: 0.9,
     maxOutputTokens: 1_024,
-    thinkingConfig: {
-      thinkingBudget: model.includes("flash-lite") ? 0 : 256,
-    },
   };
+
+  // Gemini 3 uses thinking levels instead of the Gemini 2.5 thinking budget.
+  if (!model.startsWith("gemini-3")) {
+    config.thinkingConfig = {
+      thinkingBudget: model.includes("flash-lite") ? 0 : 256,
+    };
+  }
+
+  return config;
+}
+
+function getLocalReply(personaId, messages) {
+  const latestMessage = messages.at(-1).text;
+  const isShortThankYou =
+    latestMessage.length <= 160 &&
+    /^(thank\s*you|thankyou|thanks|thx|ty)\b/i.test(latestMessage) &&
+    !/[?]/.test(latestMessage) &&
+    !/\b(can|could|would|why|what|how|when|where|explain|help)\b/i.test(
+      latestMessage,
+    );
+
+  return isShortThankYou ? LOCAL_REPLIES[personaId] : null;
 }
 
 function getProviderError(status) {
@@ -109,12 +137,22 @@ function getProviderError(status) {
 
 export async function createChatResponse(body, options = {}) {
   const { personaId, messages } = validateChatBody(body);
+  const localReply = getLocalReply(personaId, messages);
+
+  if (localReply) {
+    return { text: localReply };
+  }
+
   const apiKey = options.apiKey ?? process.env.GEMINI_API_KEY;
   const model = options.model ?? process.env.GEMINI_MODEL ?? DEFAULT_MODEL;
   const fallbackModel =
     options.fallbackModel ??
     process.env.GEMINI_FALLBACK_MODEL ??
     DEFAULT_FALLBACK_MODEL;
+  const backupModel =
+    options.backupModel ??
+    process.env.GEMINI_BACKUP_MODEL ??
+    DEFAULT_BACKUP_MODEL;
   const fetchImplementation = options.fetchImplementation ?? fetch;
   const sleepImplementation = options.sleepImplementation ?? wait;
   const logger = options.logger ?? console;
@@ -126,10 +164,7 @@ export async function createChatResponse(body, options = {}) {
     );
   }
 
-  const models = [model];
-  if (fallbackModel && fallbackModel !== model) {
-    models.push(fallbackModel);
-  }
+  const models = [...new Set([model, fallbackModel, backupModel].filter(Boolean))];
 
   let lastStatus = 502;
 
