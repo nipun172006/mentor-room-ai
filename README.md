@@ -62,7 +62,7 @@ The repository includes a `render.yaml` Blueprint, so most settings are filled a
 4. Apply the Blueprint and wait for the health check to pass.
 5. Open the generated `onrender.com` URL and test one message.
 
-**Deployment URL: _add after deployment_**
+**Live project:** [https://personagenai-hxfa.onrender.com](https://personagenai-hxfa.onrender.com)
 
 Never prefix the key with `VITE_`; that would expose it to the browser bundle.
 
