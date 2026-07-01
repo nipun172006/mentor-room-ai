@@ -1,8 +1,8 @@
 # Mentor Room
 
-A responsive persona-based AI chatbot inspired by three Scaler educators: Anshuman Singh, Abhimanyu Saxena, and Kshitij Mishra. Each mentor has a distinct, research-backed system prompt, matching quick-start questions, and a fresh conversation state.
+A persona-based chatbot inspired by three Scaler educators: Anshuman Singh, Abhimanyu Saxena, and Kshitij Mishra. Each mentor has a separate prompt, their own starter questions, and a fresh conversation state.
 
-> This is an educational AI simulation. The responses are not statements from, or endorsements by, the real people.
+> This is a student project based only on public material. The generated replies are not statements from the real people.
 
 ![Mentor Room desktop interface](docs/mentor-room-desktop.png)
 
@@ -22,8 +22,8 @@ A responsive persona-based AI chatbot inspired by three Scaler educators: Anshum
 You need Node.js 20+ and a Gemini API key.
 
 ```bash
-git clone <your-repository-url>
-cd personaGenAi1
+git clone https://github.com/nipun172006/PersonaGenAi.git
+cd PersonaGenAi
 npm install
 cp .env.example .env
 ```
@@ -50,13 +50,19 @@ npm run check
 
 This runs the Node test suite and creates a production build.
 
-## Deploy on Vercel
+## Deploy on Render
 
-1. Push the repository to GitHub.
-2. Import the repository in Vercel.
-3. Add `GEMINI_API_KEY` in **Project Settings → Environment Variables**.
-4. Deploy. Vercel will use the included `vercel.json` and the serverless `api/chat.js` route.
-5. Put the final production URL here: **Deployment URL: _add after deployment_**
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/nipun172006/PersonaGenAi)
+
+The repository includes a `render.yaml` Blueprint, so most settings are filled automatically:
+
+1. Click **Deploy to Render** and sign in.
+2. Enter your Gemini key when Render asks for `GEMINI_API_KEY`.
+3. Keep the free instance and Singapore region selected.
+4. Apply the Blueprint and wait for the health check to pass.
+5. Open the generated `onrender.com` URL and test one message.
+
+**Deployment URL: _add after deployment_**
 
 Never prefix the key with `VITE_`; that would expose it to the browser bundle.
 
@@ -74,11 +80,12 @@ src/
 test/chat.test.js      # API unit tests
 prompts.md             # Prompt decisions and research notes
 reflection.md          # Assignment reflection
+render.yaml            # Render deployment settings
 server.js              # Local Express server
 ```
 
 ## Prompt and research notes
 
-The complete annotated prompts are in [prompts.md](prompts.md). The prompt design uses public professional material and avoids claiming that the chatbot is the real person. Public sources consulted include Scaler’s instructor profiles and public posts/interviews from [Anshuman Singh](https://www.linkedin.com/in/anshumansingh26), [Abhimanyu Saxena](https://www.linkedin.com/in/abhimanyusaxena), and [Kshitij Mishra](https://in.linkedin.com/in/kshitij-mishra-a5779334).
+The complete prompts and the reason behind the main choices are in [prompts.md](prompts.md). I used Scaler’s instructor pages and public posts/interviews from [Anshuman Singh](https://www.linkedin.com/in/anshumansingh26), [Abhimanyu Saxena](https://www.linkedin.com/in/abhimanyusaxena), and [Kshitij Mishra](https://in.linkedin.com/in/kshitij-mishra-a5779334).
 
 The backend uses Google’s stable `gemini-2.5-flash` model by default. It can be changed with `GEMINI_MODEL`.
