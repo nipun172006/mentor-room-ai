@@ -1,6 +1,6 @@
 # Mentor Room
 
-[![CI](https://github.com/nipun172006/PersonaGenAi/actions/workflows/ci.yml/badge.svg)](https://github.com/nipun172006/PersonaGenAi/actions/workflows/ci.yml)
+[![CI](https://github.com/nipun172006/mentor-room-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/nipun172006/mentor-room-ai/actions/workflows/ci.yml)
 
 A persona-based chatbot inspired by three Scaler educators: Anshuman Singh, Abhimanyu Saxena, and Kshitij Mishra. Each mentor has a separate prompt, their own starter questions, and a fresh conversation state.
 
@@ -24,8 +24,8 @@ A persona-based chatbot inspired by three Scaler educators: Anshuman Singh, Abhi
 You need Node.js 20+ and a Gemini API key.
 
 ```bash
-git clone https://github.com/nipun172006/PersonaGenAi.git
-cd PersonaGenAi
+git clone https://github.com/nipun172006/mentor-room-ai.git
+cd mentor-room-ai
 npm install
 cp .env.example .env
 ```
@@ -54,7 +54,7 @@ This runs the Node test suite and creates a production build.
 
 ## Deploy on Render
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/nipun172006/PersonaGenAi)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/nipun172006/mentor-room-ai)
 
 The repository includes a `render.yaml` Blueprint, so most settings are filled automatically:
 
